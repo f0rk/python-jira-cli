@@ -942,6 +942,62 @@ class JiraAddVersion(JiraCommand):
             print e
             logger.error(decode(e))
 
+class JiraGetVersions(JiraCommand):
+
+    name = "versions"
+    summary = "Get the versions for the given project key"
+    usage = """
+    <project>              Project key, e.g. TST
+    """
+
+    def run(self, logger, jira_env, args):
+        global soap, auth
+
+        project = None
+        if "default_project" in jira_env:
+            project = jira_env["default_project"]
+
+        if len(args) > 0:
+            project = args[0]
+        elif project is None:
+            logger.error(self.usage)
+            return 0
+        try:
+            versions = soap.service.getVersions(auth, project)
+            for version in versions:
+                print version['name']
+        except Exception, e:
+            print e
+            logger.error(decode(e))
+
+class JiraGetComponents(JiraCommand):
+
+    name = "components"
+    summary = "Get the components for the given project key"
+    usage = """
+    <project>              Project key, e.g. TST
+    """
+
+    def run(self, logger, jira_env, args):
+        global soap, auth
+
+        project = None
+        if "default_project" in jira_env:
+            project = jira_env["default_project"]
+
+        if len(args) > 0:
+            project = args[0]
+        elif project is None:
+            logger.error(self.usage)
+            return 0
+        try:
+            components = soap.service.getComponents(auth, project)
+            for component in components:
+                print component['name']
+        except Exception, e:
+            print e
+            logger.error(decode(e))
+
 class JiraUpdate(JiraCommand):
 
     name = "update"
@@ -1070,6 +1126,8 @@ class Commands:
         self.add(JiraSyncVersions)
         self.add(JiraUnitTest)
         self.add(JiraUpdate)
+        self.add(JiraGetVersions)
+        self.add(JiraGetComponents)
 
     def add(self, cl):
         # TODO check for duplicates in commands
@@ -1248,6 +1306,10 @@ if (__name__ == "__main__"):
     if config.has_option("auth", "pass"):
         password = config.get("auth", "pass", None)
 
+    default_project = None
+    if config.has_option("defaults", "project"):
+        default_project = config.get("defaults", "project", None)
+
     default_server = "http://jira.example.com:80"
     if server:
         default_server = server
@@ -1274,6 +1336,9 @@ if (__name__ == "__main__"):
 
     if password:
         jira_env["password"] = password
+
+    if default_project:
+        jira_env["default_project"] = default_project
 
     server = options.server + "/rpc/soap/jirasoapservice-v2?wsdl"
     if not server.startswith('http'):  # also catches https
