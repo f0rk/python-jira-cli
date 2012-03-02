@@ -669,11 +669,19 @@ class JiraReport(JiraCommand):
         else:
            reportName = str(jira_env['reportNumber'])
         logger.info('Report \'' + reportName + '\', ' + str(len(results)) + ' issues')
-        logger.info('%s\t%s\t%s' % ('Key', 'Assignee', 'Summary'))
+        logger.info('{:<10}\t{:<10}\t{:<30}\t{:<}'.format('Key', 'Assignee', 'Version', 'Summary'))
         for i, v in enumerate(results):
             # For available field names, see the variables in
             # src/java/com/atlassian/jira/rpc/soap/beans/RemoteIssue.java
-            logger.info('%s\t%s\t%s' % (v['key'], v['assignee'], v['summary']))
+            
+            # I want this custom field
+            customFields = v['customFieldValues']
+            version = None
+            for custom in customFields:
+                if custom['customfieldId'] == 'customfield_10007':
+                    version = custom['values'][0]
+
+            logger.info('{:<10}\t{:<10}\t{:<30}\t{:<}'.format(v['key'], v['assignee'], version, v['summary']))
         return 0
 
 class JiraCreateUser(JiraCommand):
