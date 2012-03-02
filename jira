@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #
 # JIRA CLI
 #
@@ -7,6 +7,7 @@
 #
 
 from optparse import OptionParser
+import ConfigParser
 import base64
 import getopt
 import getpass
@@ -521,17 +522,23 @@ class JiraLogin(JiraCommand):
         if len(args) > 2:
             logger.error(self.usage)
             return 0
-        if len(args)  == 1:
+        if len(args) == 1:
             jirauser = args[1]
+        elif "username" in jira_env:
+            jirauser = jira_env["username"]
         else:
             jirauser = raw_input('user: ')
-        password = getpass.getpass('password: ')
+
+        if "password" in jira_env:
+            password = jira_env["password"]
+        else:
+            password = getpass.getpass('password: ')
         try:
             auth = soap.service.login(jirauser, password)
             # Write the authentication token (not password) to a file
             # for use next time
-            jirarc_file = jira_env['home'] + os.sep + '.jirarc'
-            fp = open(jira_env['jirarc_file'], 'wb')
+            jiralogin_file = jira_env['home'] + os.sep + '.jira' + os.sep + 'login'
+            fp = open(jira_env['jiralogin_file'], 'wb')
             fp.write(jirauser + '\n')
             fp.write(auth + '\n')
             fp.close()
@@ -555,9 +562,9 @@ class JiraLogout(JiraCommand):
         try:
             auth = soap.service.logout(auth)
             # Delete the authentication token (not password) from a file
-            jirarc_file = jira_env['home'] + os.sep + '.jirarc'
-            if os.path.exists(jirarc_file):
-                os.remove(jirarc_file)
+            jiralogin_file = jira_env['home'] + os.sep + '.jira' + os.sep + 'login'
+            if os.path.exists(jiralogin_file):
+                os.remove(jiralogin_file)
             return 1
         except Exception, e:
             logger.exception(e)
@@ -1097,6 +1104,8 @@ def dateStr(i):
     TODO Convert to 12 hour too?'''
     if i == None or i == 'None':
         return str(i)
+    if isinstance(i, datetime):
+        i = i.timetuple()
     return "%04d/%02d/%02d %02d:%02d:%02d GMT-1" % (i[0], i[1], i[2], i[3], i[4], i[5])
 
 def getName(id, fields):
@@ -1168,22 +1177,22 @@ class MockLogger:
 def start_login(jira_env, command_name, com, logger):
     global auth
     # Attempt to recover the cached auth object, or prompt for login
-    jirarc_file = jira_env['home'] + os.sep + '.jirarc'
-    jira_env['jirarc_file'] = jirarc_file
+    jiralogin_file = jira_env['home'] + os.sep + '.jira' + os.sep + 'login'
+    jira_env['jiralogin_file'] = jiralogin_file
     authorized = False
     while not authorized:
         try:
             logger.debug('Starting authorization')
             # Allow an explicit login, to reset the user for example
-            if command_name == 'login' and os.path.exists(jirarc_file):
-                os.remove(jirarc_file)
-            if not os.path.exists(jirarc_file):
+            if command_name == 'login' and os.path.exists(jiralogin_file):
+                os.remove(jiralogin_file)
+            if not os.path.exists(jiralogin_file):
                 logger.debug('No cached auth, starting login')
                 rc = com.run('login', logger, jira_env, [])
                 if (rc):
                     sys.exit(rc)
             logger.debug('Reading cached auth')
-            fp = open(jirarc_file, 'rb')
+            fp = open(jiralogin_file, 'rb')
             jira_env['jirauser'] = fp.readline()[:-1]
             auth = fp.readline()[:-1]
             fp.close()
@@ -1214,10 +1223,36 @@ def start_login(jira_env, command_name, com, logger):
             # Attempt another login
             logger.error('Previous login is invalid or has expired')
             logger.exception(e)
-            if os.path.exists(jirarc_file):
-                os.remove(jirarc_file)
+            if os.path.exists(jiralogin_file):
+                os.remove(jiralogin_file)
 
 if (__name__ == "__main__"):
+    jirabase_path = os.environ['HOME'] + os.sep + '.jira'
+    if not os.path.exists(jirabase_path):
+        os.makedirs(jirabase_path)
+    os.lchmod(jirabase_path, 0700)
+
+    config = ConfigParser.ConfigParser()
+    jirarc_path = jirabase_path + os.sep + 'jirarc'
+    if os.path.exists(jirabase_path + os.sep + 'jirarc'):
+        config.read(jirarc_path)
+
+    server = None
+    if config.has_option("paths", "server"):
+        server = config.get("paths", "server", None)
+
+    username = None
+    if config.has_option("auth", "user"):
+        username = config.get("auth", "user", None)
+
+    password = None
+    if config.has_option("auth", "pass"):
+        password = config.get("auth", "pass", None)
+
+    default_server = "http://jira.example.com:80"
+    if server:
+        default_server = server
+
     progname = sys.argv[0]
     com = Commands()
 
@@ -1226,7 +1261,7 @@ if (__name__ == "__main__"):
     parser.add_option("-v", "--verbose", dest="loglevel", type="int",
                       default=logging.INFO,
                       help="Verbosity, default: %default, debug is " + str(logging.DEBUG))
-    parser.add_option("-s", "--server", dest="server", default="http://jira.example.com:80",
+    parser.add_option("-s", "--server", dest="server", default=default_server,
                       help="JIRA server and port to use, default: %default")
 #    parser.add_option("-p", "--project", dest="project", default="CA",
 #                      help="Project to use, default: %default")
@@ -1234,6 +1269,13 @@ if (__name__ == "__main__"):
 
     logger = setupLogging(options.loglevel)
     jira_env = {}
+
+    if username:
+        jira_env["username"] = username
+
+    if password:
+        jira_env["password"] = password
+
     server = options.server + "/rpc/soap/jirasoapservice-v2?wsdl"
     if not server.startswith('http'):  # also catches https
         server = 'http://' + server # default is no SSL
@@ -1263,7 +1305,7 @@ if (__name__ == "__main__"):
            try:
               home = os.environ['APPDATA'] + os.sep + "JiraCLI"
            except KeyError:
-              print "Warning: unable to find HOME or APPDATA to store .jirarc file"
+              print "Warning: unable to find HOME or APPDATA to store .jira/login file"
               print "Warning: you will need to log into JIRA for every operation"
         if home != "notset" and not os.path.exists(home):
            os.makedirs(home)
