@@ -493,6 +493,38 @@ class JiraResolve(JiraCommand):
         action = 'Resolve Issue'
         return changeStatus(issueKey, action)
 
+class JiraStart(JiraCommand):
+
+    name = "start"
+    summary = "Start progress on an issue"
+    usage = """
+    <issue key>           Issue identifier, e.g. CA-1234
+    """
+
+    def run(self, logger, jira_env, args):
+        if len(args) != 1:
+            logger.error(self.usage)
+            return 0
+        issueKey = args[0]
+        action = 'Start Progress'
+        return changeStatus(issueKey, action)
+
+class JiraStop(JiraCommand):
+
+    name = "stop"
+    summary = "Stop progress on an issue"
+    usage = """
+    <issue key>           Issue identifier, e.g. CA-1234
+    """
+
+    def run(self, logger, jira_env, args):
+        if len(args) != 1:
+            logger.error(self.usage)
+            return 0
+        issueKey = args[0]
+        action = 'Stop Progress'
+        return changeStatus(issueKey, action)
+
 class JiraLink(JiraCommand):
 
     name = "link"
@@ -1128,6 +1160,8 @@ class Commands:
         self.add(JiraUpdate)
         self.add(JiraGetVersions)
         self.add(JiraGetComponents)
+        self.add(JiraStart)
+        self.add(JiraStop)
 
     def add(self, cl):
         # TODO check for duplicates in commands
