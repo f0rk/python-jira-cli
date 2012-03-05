@@ -509,6 +509,22 @@ class JiraQa(JiraCommand):
         action = 'Straight to QA'
         return changeStatus(issueKey, action)
 
+class JiraReview(JiraCommand):
+
+    name = "review"
+    summary = "Move an issue to the pending review state"
+    usage = """
+    <issue key>           Issue identifier, e.g. CA-1234
+    """
+
+    def run(self, logger, jira_env, args):
+        if len(args) != 1:
+            logger.error(self.usage)
+            return 0
+        issueKey = args[0]
+        action = 'Send Pending Review'
+        return changeStatus(issueKey, action)
+
 class JiraStart(JiraCommand):
 
     name = "start"
@@ -1223,6 +1239,7 @@ class Commands:
         self.add(JiraReports)
         self.add(JiraResolve)
         self.add(JiraQa)
+        self.add(JiraReview)
         self.add(JiraSyncComponents)
         self.add(JiraSyncVersions)
         self.add(JiraUnitTest)
