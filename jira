@@ -506,7 +506,7 @@ class JiraQa(JiraCommand):
             logger.error(self.usage)
             return 0
         issueKey = args[0]
-        action = 'Straight to QA'
+        action = 'Send to Pending QA'
         return changeStatus(issueKey, action)
 
 class JiraReview(JiraCommand):
