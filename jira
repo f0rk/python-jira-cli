@@ -457,7 +457,7 @@ class JiraClose(JiraCommand):
             logger.error(self.usage)
             return 0
         issueKey = args[0]
-        action = 'Close Issue'
+        action = 'Close This Issue'
         return changeStatus(issueKey, action)
 
 class JiraReopen(JiraCommand):
