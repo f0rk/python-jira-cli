@@ -493,6 +493,22 @@ class JiraResolve(JiraCommand):
         action = 'Resolve Issue'
         return changeStatus(issueKey, action)
 
+class JiraQa(JiraCommand):
+
+    name = "qa"
+    summary = "Move an issue to the QA state"
+    usage = """
+    <issue key>           Issue identifier, e.g. CA-1234
+    """
+
+    def run(self, logger, jira_env, args):
+        if len(args) != 1:
+            logger.error(self.usage)
+            return 0
+        issueKey = args[0]
+        action = 'Straight to QA'
+        return changeStatus(issueKey, action)
+
 class JiraStart(JiraCommand):
 
     name = "start"
@@ -1206,6 +1222,7 @@ class Commands:
         self.add(JiraReport)
         self.add(JiraReports)
         self.add(JiraResolve)
+        self.add(JiraQa)
         self.add(JiraSyncComponents)
         self.add(JiraSyncVersions)
         self.add(JiraUnitTest)
