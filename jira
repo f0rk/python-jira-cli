@@ -18,6 +18,7 @@ import sys
 import time
 from datetime import datetime
 import urllib
+import urllib2
 
 from suds.client import Client
 from suds.sax.date import DateTime as sudsdatetime
@@ -136,6 +137,46 @@ class JiraAttach(JiraCommand):
         file_contents = base64.b64encode(file_contents)
         try:
             return soap.service.addAttachmentsToIssue(auth, issueKey, [name], [[file_contents]])
+        except Exception, e:
+            logger.error(decode(e))
+
+class JiraFetch(JiraCommand):
+
+    name = "fetch"
+    summary = "Fetch attachments from an issue"
+    usage = """
+    <issue key>           Issue identifier, e.g. CA-1234
+    <directory>           The output directory
+    """
+
+    def run(self, logger, jira_env, args):
+        global soap, auth
+        if len(args) != 2:
+            logger.error(self.usage)
+        issueKey = args[0]
+        directory = args[1]
+
+        try:
+            attachments = soap.service.getAttachmentsFromIssue(auth, issueKey)
+
+            server = jira_env['server_base']
+            token = jira_env['username'] + ':' + jira_env['password']
+            token = base64.b64encode(token)
+
+            for attachment in attachments:
+                filename = attachment['filename'].replace(' ', '+');
+                url = server + '/secure/attachment/%s/%s' % (attachment['id'],
+                                                             filename)
+                url = url + '?os_username=' + jira_env['username']
+                url = url + '&os_password=' + jira_env['password']
+                req = urllib2.Request(url)
+                req.add_header('Authorization', token)
+                response = urllib2.urlopen(req)
+                contents = response.read()
+
+                output = os.path.join(directory, attachment['filename'])
+                with open(output, "wb") as fp:
+                    fp.write(contents)
         except Exception, e:
             logger.error(decode(e))
 
@@ -1220,6 +1261,7 @@ class Commands:
         self.add(JiraAddUserToGroup)
         self.add(JiraAddVersion)
         self.add(JiraAttach)
+        self.add(JiraFetch)
         self.add(JiraCat)
         self.add(JiraCatAndComments)
         self.add(JiraClose)
@@ -1461,9 +1503,15 @@ if (__name__ == "__main__"):
     if default_project:
         jira_env["default_project"] = default_project
 
-    server = options.server + "/rpc/soap/jirasoapservice-v2?wsdl"
+
+    server = options.server
     if not server.startswith('http'):  # also catches https
         server = 'http://' + server # default is no SSL
+
+    jira_env['server_base'] = server
+
+    server = server + "/rpc/soap/jirasoapservice-v2?wsdl"
+
     if len(args) == 0 or args[0] in ['help']:
         sys.exit(com.run("help", logger, jira_env, args[1:]))
 
