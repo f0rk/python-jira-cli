@@ -462,7 +462,11 @@ def changeStatus(issueKey, action):
         logger.error(decode(e))
     actionId = ''
     for i, v in enumerate(actions):
-        if v['name'] == action:
+        if isinstance(action, (list, tuple)):
+            if v['name'] in action:
+                actionId = v['id']
+                break
+        elif v['name'] == action:
             actionId = v['id']
             break
     if actionId == '':
@@ -547,7 +551,7 @@ class JiraQa(JiraCommand):
             logger.error(self.usage)
             return 0
         issueKey = args[0]
-        action = 'Send Pending QA'
+        action = ('Send to Pending QA', 'Send Pending QA')
         return changeStatus(issueKey, action)
 
 class JiraReview(JiraCommand):
