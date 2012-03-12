@@ -1321,7 +1321,7 @@ def encode(s):
         return "None"
     if type(s) == unicode:
         s = s.encode("utf-8")
-    return str(s)
+    return unicode(s)
 
 def dateStr(i):
     '''TODO Why are dates from JIRA at GMT-1?
