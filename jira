@@ -502,7 +502,7 @@ class JiraClose(JiraCommand):
             logger.error(self.usage)
             return 0
         issueKey = args[0]
-        action = 'Close This Issue'
+        action = ('Close This Issue', 'Close Issue')
         return changeStatus(issueKey, action)
 
 class JiraReopen(JiraCommand):
