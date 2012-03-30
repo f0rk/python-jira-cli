@@ -470,7 +470,7 @@ def changeStatus(issueKey, action):
             actionId = v['id']
             break
     if actionId == '':
-        logger.error('Unable to perform action: ' + action)
+        logger.error('Unable to perform action: ' + str(action))
         logger.error('Choices are: ')
         for i, v in enumerate(actions):
             logger.info(v['name'] + ' (' + v['id']+ ')')
