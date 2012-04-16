@@ -518,7 +518,7 @@ class JiraReopen(JiraCommand):
             logger.error(self.usage)
             return 0
         issueKey = args[0]
-        action = 'Reopen Issue'
+        action = ('Reopen Issue', 'Reopen to Development')
         return changeStatus(issueKey, action)
 
 class JiraResolve(JiraCommand):
