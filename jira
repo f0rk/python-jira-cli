@@ -481,7 +481,6 @@ def changeStatus(issueKey, action):
     timetracking = '1m'
     try:
         return soap.service.progressWorkflowAction(auth, issueKey, actionId, [
-            {"id": "assignee", "values": [jira_env['jirauser']]},
             {"id": "resolution", "values": [resolution]},
             {"id": "timetracking", "values": [timetracking]},
             ])
