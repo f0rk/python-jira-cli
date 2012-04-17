@@ -757,7 +757,7 @@ class JiraReport(JiraCommand):
                 if custom['customfieldId'] == 'customfield_10007':
                     version = custom['values'][0]
 
-            logger.info('{:<10}\t{:<10}\t{:<30}\t{:<}'.format(v['key'], v['assignee'], version, v['summary']))
+            logger.info(u'{:<10}\t{:<10}\t{:<30}\t{:<}'.format(v['key'], v['assignee'], version, v['summary']))
         return 0
 
 class JiraCreateUser(JiraCommand):
