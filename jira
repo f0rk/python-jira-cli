@@ -468,9 +468,9 @@ Type 'jira create' for more detail on these options.
                     if cn == "unknown":
                         logger.error("Field name '%s' not found in %s" % (cn_raw, cf_choices))
                         return 0
-                cfv.append([
-                    {'customfieldId': cn, 'values': [cv.split(',')]}
-                    ])
+                    cfv.append([
+                        {'customfieldId': cn, 'values': [cv.split(',')]}
+                        ])
 
             remoteIssue = {
                 "project": options.project,
