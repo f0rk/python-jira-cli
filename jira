@@ -113,6 +113,50 @@ class JiraHelp(JiraCommand):
         logger.info("")
         return 1
 
+class JiraAssign(JiraCommand):
+
+    name = "assign"
+    summary = "Assign this issue"
+    usage = """
+    <issue key>           Issue identifier, e.g. CA-1234
+    <user>                User to assign to
+    """
+
+    def run(self, logger, jira_env, args):
+        global soap, auth
+        if len(args) != 2:
+            logger.error(self.usage)
+            return 0
+        issueKey = args[0]
+        fieldName = 'assignee'
+        user = args[1].split(',')
+        try:
+            # TODO there must be a better way to get this info
+            # and getFieldsForEdit isn't it? Basically all the private fields
+            # of RemoteField.java
+            std_fieldnames = [
+                'key','summary','reporter','assignee','description',
+                'environment','project', 'type', 'status', 'priority', 'resolution',
+                'duedate', 'originalEstimate', 'timeLogged', 'votes',
+                  ]
+            if fieldName not in std_fieldnames and not fieldName.startswith("customfield_"):
+                try:
+                    jira_env['fieldnames'] = soap.service.getCustomFields(auth)
+                except Exception, e:
+                    # In case we don't have permission to get the fields
+                    jira_env['fieldnames'] = [{'id':-1, 'name':'unavailable'}]
+                cn = getFieldId(fieldName, jira_env['fieldnames'])
+                if cn == "unknown":
+                    logger.error("Field name '%s' not found in %s" % (fieldName, std_fieldnames + jira_env['fieldnames']))
+                    return 0
+                fieldName = cn
+            return soap.service.updateIssue(auth, issueKey, [
+               {'id':fieldName,
+                'values':user}
+               ])
+        except Exception, e:
+            logger.exception(e)
+
 class JiraAttach(JiraCommand):
 
     name = "attach"
@@ -1263,6 +1307,7 @@ class Commands:
         self.commands = {}
         self.add(JiraAddUserToGroup)
         self.add(JiraAddVersion)
+        self.add(JiraAssign)
         self.add(JiraAttach)
         self.add(JiraFetch)
         self.add(JiraCat)
