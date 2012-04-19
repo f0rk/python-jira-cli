@@ -124,12 +124,15 @@ class JiraAssign(JiraCommand):
 
     def run(self, logger, jira_env, args):
         global soap, auth
-        if len(args) != 2:
+        if len(args) not in (1, 2):
             logger.error(self.usage)
             return 0
         issueKey = args[0]
         fieldName = 'assignee'
-        user = args[1].split(',')
+        if len(args) == 1:
+            user = jira_env['username'].split(',')
+        else:
+            user = args[1].split(',')
         try:
             # TODO there must be a better way to get this info
             # and getFieldsForEdit isn't it? Basically all the private fields
