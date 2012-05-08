@@ -797,12 +797,7 @@ class JiraReport(JiraCommand):
             # For available field names, see the variables in
             # src/java/com/atlassian/jira/rpc/soap/beans/RemoteIssue.java
             
-            # I want this custom field
-            customFields = v['customFieldValues']
-            version = None
-            for custom in customFields:
-                if custom['customfieldId'] == 'customfield_10007':
-                    version = custom['values'][0]
+            version = ", ".join([x['name'] for x in v['affectsVersions']])
 
             logger.info(u'{:<10}\t{:<10}\t{:<30}\t{:<}'.format(v['key'], v['assignee'], version, v['summary']))
         return 0
